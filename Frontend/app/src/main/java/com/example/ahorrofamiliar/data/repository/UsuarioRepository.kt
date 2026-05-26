@@ -1,0 +1,39 @@
+package com.example.ahorrofamiliar.data.repository
+
+import com.example.ahorrofamiliar.data.model.Usuario
+import com.example.ahorrofamiliar.data.remote.ApiService
+
+class UsuarioRepository(
+    private val api: ApiService
+) {
+
+    suspend fun obtenerUsuarioPorDispositivo(
+        dispositivoId: String
+    ): Usuario {
+
+        return api.obtenerUsuarioPorDispositivo(
+            dispositivoId
+        )
+
+    }
+
+    suspend fun crearUsuario(
+        usuario: Usuario
+    ): Usuario {
+
+        return api.crearUsuario(usuario)
+
+    }
+
+    suspend fun editarUsuario(
+        id: Int,
+        usuario: Usuario
+    ): Usuario {
+
+        return api.editarUsuario(
+            id,
+            usuario
+        )
+
+    }
+}
