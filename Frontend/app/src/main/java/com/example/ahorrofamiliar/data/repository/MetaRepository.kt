@@ -5,7 +5,7 @@ import com.example.ahorrofamiliar.data.model.Pago
 import com.example.ahorrofamiliar.data.remote.ApiService
 
 /**
- * Repository: capa intermedia entre el ViewModel y el ApiService.
+ * Repository: capa intermedia entre los ViewModel de crear, listar, detallar y pagos de las metas y el ApiService.
  *
  * Por que existe?
  * - Para que el ViewModel no conozca a Retrofit directamente.

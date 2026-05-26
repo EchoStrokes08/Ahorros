@@ -13,29 +13,34 @@ import retrofit2.http.Query
 /**
  * Define los endpoints del backend.
  * Retrofit genera la implementacion en tiempo de ejecucion.
+ * los servicios estan en el mismo orden que en el backend
  */
 interface ApiService {
-
+   // GET /usuarios - lista todos los usuarios
     @GET("usuarios")
     suspend fun obtenerUsuarios(): List<Usuario>
 
+    // GET /usuarios/{id} - detalle de un usuario buscado por su dispositivo
     @GET("usuarios/dispositivo/{idDispositivo}")
     suspend fun obtenerUsuarioPorDispositivo(
         @Path("idDispositivo")
         idDispositivo: String
     ): Usuario
 
+    // POST /usuarios - crear un usuario
     @POST("usuarios")
     suspend fun crearUsuario(
         @Body usuario: Usuario
     ): Usuario
 
+    // PUT /usuarios/{id} - editar un usuario
     @PUT("usuarios/{id}")
     suspend fun editarUsuario(
         @Path("id") id: Int,
         @Body usuario: Usuario
     ): Usuario
 
+    // POST /usuarios/{id}/amigos - agregar un amigo para el usuario de con id
     @POST("usuarios/{id}/amigos")
     suspend fun agregarAmigo(
         @Path("id") id: Int, //params

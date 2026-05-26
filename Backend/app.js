@@ -1,46 +1,23 @@
 import express from 'express'
 import fs from 'fs'
 
-/*
-=====================================
-IMPORTAR DATOS
-=====================================
-
-Se importan los arreglos que funcionan
-como una base de datos temporal.
-
-- usuarios
-- metas
-- pagos
-*/
-
 import {
   usuarios,
   metas,
   pagos
 } from './data.js'
 
-/*
-=====================================
-CONFIGURACIÓN INICIAL
-=====================================
-*/
 
 const app = express()
 const port = 3000
 
-/*
-Permite recibir JSON desde Retrofit
-o cualquier cliente HTTP.
-*/
-
-app.use(express.json())
+app.use(express.json()) //Permite recibir JSON desde Retrofit o cualquier cliente HTTP.
 
 
 /*
-=====================================
-GUARDAR ARCHIVO data.js
-=====================================
+====================================================
+Funcion para guardar, y actualizar datos en data.js
+====================================================
 */
 
 function guardarData() {
@@ -52,13 +29,11 @@ export const usuarios = ${JSON.stringify(
     null,
     2
   )}
-
 export const metas = ${JSON.stringify(
     metas,
     null,
     2
   )}
-
 export const pagos = ${JSON.stringify(
     pagos,
     null,
@@ -66,7 +41,6 @@ export const pagos = ${JSON.stringify(
   )}
 
 `
-
   fs.writeFileSync(
     './data.js',
     contenido
@@ -75,19 +49,12 @@ export const pagos = ${JSON.stringify(
 }
 
 /*
-#####################################################
-USUARIOS
-#####################################################
+==============================================
+Servicios para usuarios
+==============================================
 */
 
-/*
-=====================================
-OBTENER TODOS LOS USUARIOS
-=====================================
-
-GET /usuarios
-*/
-
+//------ Obtener todos los usuarios ------
 app.get('/usuarios', (req, res) => {
 
   res.send(usuarios)
@@ -95,17 +62,13 @@ app.get('/usuarios', (req, res) => {
 })
 
 /*
-=====================================
-BUSCAR USUARIO POR ID DEL DISPOSITIVO
-=====================================
-
-GET /usuarios/dispositivo/:idDispositivo
+--------- Buscar usuario por id de dispositivo ---------
 
 Ejemplo:
 GET /usuarios/dispositivo/12345
 
 Se usa para identificar al usuario
-desde el celular sin login.
+desde el celular sin necesidad del login.
 */
 
 app.get(
@@ -115,124 +78,65 @@ app.get(
 
     const dispositivoId =
       req.params.idDispositivo
+      //miramos que trea el request params
+      //lo guardamos en una variable para usarlo despues
 
-    /*
-    Buscar usuario
-    */
-
-    const usuario = usuarios.find(
-
-      u =>
-        u.idDispositivo ===
-        dispositivoId
-
+    const usuario = usuarios.find( //Usamos .find para buscar, en este caso el usuario
+      u => u.idDispositivo === dispositivoId // argumento de busqueda, comparamos el id del dispositivo con el que nos llega por params
     )
 
-    /*
-    Validar existencia
-    */
-
-    if (!usuario) {
-
+    if (!usuario) { // miramos si no encontramos el usuario, si es asi respondemos con un error 404
       return res.status(404).send({
         error: 'Usuario no encontrado'
       })
-
     }
 
-    /*
-    Respuesta
-    */
-
-    res.send(usuario)
+    res.send(usuario) // si encontramos el usuario respondemos con sus datos
 
   }
 )
 
-/*
-=====================================
-CREAR USUARIO
-=====================================
-
-POST /usuarios
-
-Body:
-{
-  "nombre": "Jonathan",
-  "idDispositivo": "12345"
-}
-*/
+//------ Crear nuevo usuario ------ 
+// con POST para crear nuevos recursos, en este caso un nuevo usuario
 
 app.post('/usuarios', (req, res) => {
 
-  /*
-  Crear objeto usuario
-  */
-
+  // creamos un objeto con los datos del nuevo usuario, e id dinamimca
   const nuevoUsuario = {
 
     id: usuarios.length + 1,
 
-    nombre: req.body.nombre,
+    nombre: req.body.nombre, //obtener el nombre del body del request
 
-    idDispositivo:
-      req.body.idDispositivo,
+    idDispositivo: req.body.idDispositivo, //obtener el id del dispositivo del body del request
 
-    amigos: []
+    amigos: [] // recien creado no tiene amigos, se inicializa como un array vacio
 
   }
 
-  /*
-  Guardar usuario
-  */
+  usuarios.push(nuevoUsuario) // guardamos de manera temporal en la ram del server
 
-  usuarios.push(nuevoUsuario)
+  guardarData() // guardamos en el archivo data.js para persistencia
 
-  /*
-  Respuesta
-  */
-
-  guardarData()
-
-  res.status(201).send(
-    nuevoUsuario
-  )
+  res.status(201).send( nuevoUsuario ) // respondemos con el nuevo usuario creado, y un status 201 que indica que se ha creado un recurso
 
 })
 
-/*
-=====================================
-EDITAR USUARIO
-=====================================
-
-PUT /usuarios/:id
-
-Body:
-{
-  "nombre": "Nuevo nombre"
-}
-*/
+//------ Editar a un usuario ------ 
+// con PUT para actualizar recursos, en este caso un usuario existente
 
 app.put('/usuarios/:id', (req, res) => {
 
-  /*
-  Obtener id
-  */
-
   const id =
-    parseInt(req.params.id)
+    parseInt(req.params.id) //desde android nos llega el id como string (se lo enviamos al abrir la app, cuando colsulta id por dispositivo),
+    //lo convertimos a numero para compararlo con los ids de los usuarios que son numeros
 
-  /*
-  Buscar usuario
-  */
-
-  const usuario = usuarios.find(
+  // ------------------------------------------------------------
+  //revisa que exista y no haya inconsistencias con android,
+  //puede pasar que se envie un id que no existe, o que se envie un id con formato incorrecto, por eso es importante validar
+  const usuario = usuarios.find( 
     u => u.id === id
   )
-
-  /*
-  Validar existencia
-  */
 
   if (!usuario) {
 
@@ -241,79 +145,42 @@ app.put('/usuarios/:id', (req, res) => {
     })
 
   }
-
-  /*
-  Actualizar nombre
-  */
+  //-------------------------------------------------------------
 
   usuario.nombre =
-    req.body.nombre
+    req.body.nombre //actualizamos el nombre del usuario con el valor que nos llega en el body del request desde android
 
-  /*
-  Respuesta
-  */
-  guardarData()
-  res.send(usuario)
+  guardarData() // guardamos en el archivo data.js para persistencia
+
+  res.send(usuario)// reenbiamos el usuario actualizado como respuesta
 
 })
 
-/*
-#####################################################
-AMIGOS
-#####################################################
-*/
-
-/*
-=====================================
-AGREGAR AMIGO
-=====================================
-
-POST /usuarios/:id/amigos
-
-Body:
-{
-  "friendId": 2
-}
-
-La amistad se agrega en ambos lados.
-*/
+//------ Agregar amigo a usuario ------
 
 app.post(
   '/usuarios/:id/amigos',
 
   (req, res) => {
 
-    /*
-    Usuario principal
-    */
-
     const id =
-      parseInt(req.params.id)
-
-    /*
-    Usuario amigo
-    */
+      parseInt(req.params.id) // obtenemos el id del usuario al que queremos agregar un amigo, 
+      // lo convertimos a numero
 
     const idAmigo =
-      req.body.friendId
+      req.body.friendId // obtenemos el id del amigo que queremos agregar, Desde el mapeo de android, se lo enviamos en el body del request con la clave friendId, lo obtenemos con req.body.friendId
 
-    /*
-    Buscar usuarios
-    */
 
-    const usuario = usuarios.find(
+
+    const usuario = usuarios.find( // busca que exista el usuario al que queremos agregar un amigo
       u => u.id === id
     )
 
-    const amigo = usuarios.find(
+    const amigo = usuarios.find( // busca que exista el amigo que queremos agregar
       u => u.id === idAmigo
     )
 
-    /*
-    Validar existencia
-    */
-
-    if (!usuario || !amigo) {
+    if (!usuario || !amigo) { // si no existe el usuario o el amigo respondemos con un error 404
 
       return res.status(404).send({
         error: 'Usuario no encontrado'
@@ -321,402 +188,176 @@ app.post(
 
     }
 
-    /*
-    Agregar amigo al usuario
-    */
-
-    if (
-      !usuario.amigos.includes(idAmigo)
-    ) {
-
+    if ( !usuario.amigos.includes(idAmigo) ) { // si el amigo no esta ya en la lista de amigos del usuario, lo agregamos
       usuario.amigos.push(idAmigo)
-
     }
 
-    /*
-    Agregar usuario al amigo
-    */
 
-    if (
-      !amigo.amigos.includes(id)
-    ) {
-
+    if (!amigo.amigos.includes(id) ) {// si el usuario no esta ya en la lista de amigos del amigo, lo agregamos para que la amistad sea reciproca
       amigo.amigos.push(id)
-
     }
 
-    guardarData()
-
-    /*
-    Respuesta
-    */
+    guardarData()// guardamos en el archivo data.js para persistencia
 
     res.send({
-      mensaje: 'Amigo agregado'
+      mensaje: 'Amigo agregado'// respondemos con un mensaje de exito
     })
 
   }
 )
 
-/*
-#####################################################
-METAS
-#####################################################
-*/
 
 /*
 =====================================
-OBTENER METAS VISIBLES
+Servicios para metas
 =====================================
-
-GET /metas?userId=1
-
-Solo devuelve metas donde:
-- el usuario es dueño
-- o pertenece como miembro
 */
+
+//------ Obtener metas visibles para un usuario ------
 
 app.get('/metas', (req, res) => {
 
-  /*
-  Obtener usuario
-  */
+  const userId = parseInt(req.query.userId) // obtenemos el id del usuario desde los query params, lo convertimos a numero
 
-  const userId =
-    parseInt(req.query.userId)
-
-  /*
-  Filtrar metas visibles
-  */
-
-  const metasVisibles = metas.filter(
+  const metasVisibles = metas.filter( // filtramos las metas para obtener solo las que son visibles para el usuario, es decir, 
+  // las que el usuario es dueño o miembro
 
     meta => {
-
       return (
-
-        meta.idPrincipal === userId ||
-
-        meta.miembros.includes(userId)
-
+        meta.idPrincipal === userId || meta.miembros.includes(userId)
       )
-
     }
-
   )
 
-  /*
-  Respuesta
-  */
-
-  res.send(metasVisibles)
-
+  res.send(metasVisibles) // respondemos con las metas visibles para el usuario
 })
 
-/*
-=====================================
-CREAR META
-=====================================
-
-POST /metas
-
-Body:
-{
-  "titulo": "Moto",
-  "montoObjetivo": 12000000,
-  "imagen": "...",
-  "idPrincipal": 1
-}
-*/
+//------ Crear nueva meta ------
 
 app.post('/metas', (req, res) => {
 
-  /*
-  Crear meta
-  */
-
+/// Crear nueva meta con datos del body del request, e id dinamico
   const nuevaMeta = {
-
     id: metas.length + 1,
-
     titulo: req.body.titulo,
-
-    montoObjetivo:
-      req.body.montoObjetivo,
-
+    montoObjetivo:req.body.montoObjetivo,
     imagen: req.body.imagen,
-
-    idPrincipal:
-      req.body.idPrincipal,
-
-    /*
-    El dueño entra automáticamente
-    como miembro
-    */
-
-    miembros: [
-      req.body.idPrincipal
-    ]
-
+    idPrincipal:req.body.idPrincipal,
+    miembros: [ req.body.idPrincipal ] // el creador de la meta es el primer miembro
   }
 
-  /*
-  Guardar meta
-  */
+  metas.push(nuevaMeta) // guardamos de manera temporal en la ram del server
 
-  metas.push(nuevaMeta)
-
-  /*
-  Respuesta
-  */
-
-  guardarData()
+  guardarData() // guardamos en el archivo data.js para persistencia
 
   res.status(201).send(
-    nuevaMeta
+    nuevaMeta // respondemos con la nueva meta creada, y un status 201 que indica que se ha creado un recurso
   )
 
 })
 
-/*
-=====================================
-DETALLE DE META
-=====================================
-
-GET /metas/:id?idPrincipal=1
-
-Devuelve:
-- datos de la meta
-- pagos
-- total ahorrado
-- porcentaje
-*/
+//------ Obtener detalles de una meta ------
 
 app.get('/metas/:id', (req, res) => {
 
-  /*
-  Obtener datos
-  */
+  const metaId = parseInt(req.params.id) // obtenemos el id de la meta desde los params, lo convertimos a numero
 
-  const metaId =
-    parseInt(req.params.id)
-
-  const idUsuario =
-    parseInt(req.query.idPrincipal)
-
-  /*
-  Buscar meta
-  */
+  const idUsuario = parseInt(req.query.idPrincipal) // obtenemos el id del usuario desde los query params, lo convertimos a numero
 
   const meta = metas.find(
-    m => m.id === metaId
+    m => m.id === metaId // buscamos la meta por id
   )
 
-  /*
-  Validar existencia
-  */
-
-  if (!meta) {
-
+  if (!meta) { // si no existe la meta respondemos con un error 404
     return res.status(404).send({
       error: 'Meta no encontrada'
     })
-
   }
 
-  /*
-  Validar acceso
-  */
-
+  // Validar acceso: solo el dueño o miembros pueden acceder a los detalles de la meta
   const tieneAcceso =
+    meta.idPrincipal === idUsuario || meta.miembros.includes(idUsuario)
 
-    meta.idPrincipal ===
-      idUsuario ||
-
-    meta.miembros.includes(
-      idUsuario
-    )
-
+    // si el usuario no es el dueño ni miembro, respondemos con un error 403
   if (!tieneAcceso) {
-
     return res.status(403).send({
       error:
         'No tienes acceso a esta meta'
     })
-
   }
 
-  /*
-  Obtener pagos
-  */
-
+  // Filtrar pagos de esta meta
   const pagosDeLaMeta = pagos.filter(
-
-    p => p.metaId === metaId
-
+    p => p.metaId === metaId // filtramos los pagos para obtener solo los que pertenecen a esta meta
   )
 
-  /*
-  Calcular total ahorrado
-  */
-
+  // Calcular total salvado para esta meta
   const totalSalvado =
     pagosDeLaMeta.reduce(
-
-      (sum, pago) =>
-
-        sum + pago.montoAportado,
-
-      0
-
+      (sum, pago) => // sumamos el monto aportado de cada pago para obtener el total salvado
+        sum + pago.montoAportado, 0 // el 0 es el valor inicial de la suma
     )
-
-  /*
-  Calcular porcentaje
-  */
-
+  
+    // Calcular porcentaje de avance
   const porcentaje =
 
     (totalSalvado /
       meta.montoObjetivo) * 100
 
-  /*
-  Respuesta
-  */
 
-  res.send({
-
+  res.send({// respondemos con los detalles de la meta, incluyendo los pagos, total salvado y porcentaje de avance
     ...meta,
-
     pagosDeLaMeta,
-
     totalSalvado,
-
     porcentaje
-
   })
 
 })
 
-/*
-=====================================
-AGREGAR MIEMBRO A META
-=====================================
+// ----- Agregar miembro a una meta ------
+app.post( '/metas/:idMeta/miembros',(req, res) => {
 
-POST /metas/:idMeta/miembros
+    const idMeta = parseInt(req.params.idMeta) // obtenemos el id de la meta desde los params, lo convertimos a numero
 
-Body:
-{
-  "idUsuario": 2,
-  "idSolicitante": 1
-}
+    const idUsuario = req.body.idUsuario // obtenemos el id del usuario que queremos agregar desde el body del request, lo convertimos a numero
 
-Solo el dueño puede agregar miembros.
-Solo puede agregar amigos.
-*/
+    const idSolicitante = req.body.idSolicitante // obtenemos el id del usuario que hace la solicitud desde el body del request, lo convertimos a numero
 
-app.post(
-  '/metas/:idMeta/miembros',
-
-  (req, res) => {
-
-    /*
-    Obtener datos
-    */
-
-    const idMeta =
-      parseInt(req.params.idMeta)
-
-    const idUsuario =
-      req.body.idUsuario
-
-    const idSolicitante =
-      req.body.idSolicitante
-
-    /*
-    Buscar meta
-    */
-
-    const meta = metas.find(
+    
+    const meta = metas.find( // buscamos la meta por id
       m => m.id === idMeta
     )
 
-    /*
-    Validar existencia
-    */
-
-    if (!meta) {
-
+    if (!meta) { // si no existe la meta respondemos con un error 404
       return res.status(404).send({
         error: 'Meta no encontrada'
       })
-
     }
 
-    /*
-    Solo el dueño puede agregar
-    */
-
-    if (
-      meta.idPrincipal !==
-      idSolicitante
-    ) {
-
+    if ( meta.idPrincipal !== idSolicitante) { // si el solicitante no es el dueño de la meta, respondemos con un error 403
       return res.status(403).send({
         error:
           'Solo el dueño puede agregar miembros'
       })
-
     }
 
-    /*
-    Buscar dueño
-    */
-
-    const dueño = usuarios.find(
-
-      u =>
-        u.id === meta.idPrincipal
-
+    const dueño = usuarios.find( // buscamos el usuario dueño de la meta
+      u => u.id === meta.idPrincipal
     )
 
-    /*
-    Validar amistad
-    */
-
-    if (
-      !dueño.amigos.includes(
-        idUsuario
-      )
-    ) {
-
+    if (!dueño.amigos.includes(idUsuario)) {// si el usuario que se quiere agregar no es amigo del dueño, respondemos con un error 403
       return res.status(400).send({
         error:
           'Solo puedes agregar amigos'
       })
-
     }
 
-    /*
-    Agregar miembro
-    */
-
-    if (
-      !meta.miembros.includes(
-        idUsuario
-      )
-    ) {
-
-      meta.miembros.push(
-        idUsuario
-      )
-      guardarData()
+    if (!meta.miembros.includes( idUsuario)) {
+    // si el usuario no es ya miembro de la meta, lo agregamos
+      meta.miembros.push( idUsuario)
+      guardarData() // guardamos en el archivo data.js para persistencia si se pudo agregar el miembro
 
     }
-
-    /*
-    Respuesta
-    */
 
     res.send({
       mensaje: 'Miembro agregado'
@@ -726,159 +367,76 @@ app.post(
 )
 
 /*
-#####################################################
-PAGOS
-#####################################################
+=====================================
+Servicios para pagos
+=====================================
 */
 
-/*
-=====================================
-REGISTRAR PAGO
-=====================================
 
-POST /pagos
-
-Body:
-{
-  "metaId": 1,
-  "idMiembro": 2,
-  "montoAportado": 50000
-}
-*/
-
+//------ Realizar o crear un pago a una meta ------
 app.post('/pagos', (req, res) => {
 
-  /*
-  Buscar meta
-  */
-
-  const meta = metas.find(
-
+  const meta = metas.find(// buscamos la meta a la que se quiere hacer el pago, para validar que exista y que el usuario sea miembro
     m => m.id === req.body.metaId
-
   )
 
-  /*
-  Validar existencia
-  */
-
-  if (!meta) {
-
+  if (!meta) { // si no existe la meta respondemos con un error 404
     return res.status(404).send({
       error: 'Meta no encontrada'
     })
-
   }
 
-  /*
-  Validar membresía
-  */
-
-  const esMiembro =
-
-    meta.miembros.includes(
+  const esMiembro = meta.miembros.includes
+    (
       req.body.idMiembro
-    )
+    )// validamos que el usuario que hace el pago sea miembro de la meta
 
-  if (!esMiembro) {
-
+  if (!esMiembro) {// si el usuario no es miembro de la meta, respondemos con un error 403
     return res.status(403).send({
       error:
         'No perteneces a esta meta'
     })
-
   }
 
-  /*
-  Crear pago
-  */
-
-  const nuevoPago = {
-
+  const nuevoPago = {// creamos un nuevo pago con los datos del body del request, e id dinamico
     id: pagos.length + 1,
-
-    metaId:
-      req.body.metaId,
-
-    idMiembro:
-      req.body.idMiembro,
-
-    montoAportado:
-      req.body.montoAportado,
-
-    fecha:
-      new Date().toLocaleDateString()
-
+    metaId: req.body.metaId,
+    idMiembro: req.body.idMiembro,
+    montoAportado: req.body.montoAportado,
+    fecha: new Date().toLocaleDateString()
   }
 
-  /*
-  Guardar pago
-  */
+  pagos.push(nuevoPago)// guardamos de manera temporal en la ram del server
 
-  pagos.push(nuevoPago)
-
-  /*
-  Respuesta
-  */
-
-  guardarData()
+  guardarData() // guardamos en el archivo data.js para persistencia
 
   res.status(201).send(
-    nuevoPago
+    nuevoPago// respondemos con el nuevo pago creado, y un status 201 que indica que se ha creado un recurso
   )
 
 })
 
-/*
-=====================================
-CONSULTAR PAGOS DE UNA META
-=====================================
+//------ Obtener pagos de una meta ------
 
-GET /metas/:metaId/pagos
-*/
+app.get('/metas/:metaId/pagos', (req, res) => {
 
-app.get(
-  '/metas/:metaId/pagos',
+    const metaId = parseInt(req.params.metaId) // obtenemos el id de la meta desde los params, lo convertimos a numero
 
-  (req, res) => {
-
-    /*
-    Obtener id meta
-    */
-
-    const metaId =
-      parseInt(req.params.metaId)
-
-    /*
-    Filtrar pagos
-    */
-
-    const pagosDeLaMeta =
+    const pagosDeLaMeta = // filtramos los pagos para obtener solo los que pertenecen a esta meta
       pagos.filter(
-
         p => p.metaId === metaId
-
       )
-
-    /*
-    Respuesta
-    */
-
-    res.send(pagosDeLaMeta)
-
+    res.send(pagosDeLaMeta) // respondemos con los pagos de la meta
   }
 )
 
 /*
-#####################################################
+=====================================
 INICIAR SERVIDOR
-#####################################################
+=====================================
 */
-
 app.listen(port, () => {
-
   console.log(
     `Servidor ejecutándose en puerto ${port}`
   )
-
 })

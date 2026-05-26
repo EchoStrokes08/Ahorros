@@ -46,18 +46,30 @@ object Rutas {
     const val AMIGOS = "amigos"
     const val CREAR_META = "crear_meta"
 
+    /**
+     * Genera la ruta para el detalle de una meta específica.
+     */
     fun detalle(metaId: Int) = "detalle/$metaId"
 
+    /**
+     * Genera la ruta para registrar un pago a una meta específica.
+     */
     fun pago(metaId: Int) = "pago/$metaId"
 }
 
+/**
+ * Componente principal de navegación de la aplicación.
+ * Gestiona el NavHost, la NavigationBar inferior y la lógica de redirección basada en el estado del usuario.
+ */
 @Composable
 fun AppNavigation() {
 
     val context = LocalContext.current
 
+    // Identificador único del dispositivo para persistencia sin login
     val deviceId = DeviceUtils.obtenerDispositivoId(context)
 
+    // ViewModels compartidos a nivel de navegación
     val perfilViewModel: PerfilViewModel = viewModel(
         factory = ViewModelFactory()
     )
@@ -70,6 +82,7 @@ fun AppNavigation() {
 
     val currentRoute = backStackEntry?.destination?.route
 
+    // Carga inicial del usuario al arrancar la app
     LaunchedEffect(Unit) {
         perfilViewModel.cargarUsuario(deviceId)
     }
@@ -93,71 +106,35 @@ fun AppNavigation() {
                             launchSingleTop = true
                         }
                     },
-
-                    icon = {
-                        Icon(
-                            Icons.Default.Home,
-                            contentDescription = "Metas"
-                        )
-                    },
-
-                    label = {
-                        Text("Metas")
-                    }
+                    icon = { Icon(Icons.Default.Home, contentDescription = "Metas") },
+                    label = { Text("Metas") }
                 )
+                // Item: Gestión de Amigos
                 NavigationBarItem(
-
                     selected = currentRoute == Rutas.AMIGOS,
-
                     onClick = {
-
                         navController.navigate(Rutas.AMIGOS) {
-
                             popUpTo(navController.graph.startDestinationId)
-
                             launchSingleTop = true
                         }
                     },
-
-                    icon = {
-                        Icon(
-                            Icons.Default.Add,
-                            contentDescription = "Metas"
-                        )
-                    },
-
-                    label = {
-                        Text("Amigos")
-                    }
+                    icon = { Icon(Icons.Default.Add, contentDescription = "Amigos") },
+                    label = { Text("Amigos") }
                 )
+                // Item: Perfil de Usuario
                 NavigationBarItem(
-
                     selected = currentRoute == Rutas.PERFIL,
-
                     onClick = {
-
                         navController.navigate(Rutas.PERFIL) {
-
                             popUpTo(navController.graph.startDestinationId)
-
                             launchSingleTop = true
                         }
                     },
-
-                    icon = {
-                        Icon(
-                            Icons.Default.Person,
-                            contentDescription = "Perfil"
-                        )
-                    },
-
-                    label = {
-                        Text("Perfil")
-                    }
+                    icon = { Icon(Icons.Default.Person, contentDescription = "Perfil") },
+                    label = { Text("Perfil") }
                 )
             }
         }
-
     ) { paddingValues ->
 
         NavHost(
@@ -166,68 +143,48 @@ fun AppNavigation() {
             modifier = Modifier.padding(paddingValues)
         ) {
 
+            // Pantalla de Perfil / Registro
             composable(Rutas.PERFIL) {
-
                 PerfilScreen(
-
                     viewModel = perfilViewModel,
-
                     idDispositivo = deviceId,
-
                     onNavigateToLista = {
-
                         navController.navigate(Rutas.LISTA)
                     }
                 )
             }
 
+            // Pantalla de Lista de Amigos
             composable(Rutas.AMIGOS) {
-
-                val usuario by
-                perfilViewModel.usuario.collectAsState()
-
+                val usuario by perfilViewModel.usuario.collectAsState()
                 usuario?.let {
-
                     AmigosScreen(
-
                         viewModel = amigosViewModel,
-
                         usuarioActual = it,
-
                         onAmigoAdded = {
-                            // Refrescar el perfil para obtener la lista de amigos actualizada
                             perfilViewModel.cargarUsuario(deviceId)
                         }
-
                     )
                 }
             }
 
+            // Pantalla Principal: Listado de Metas de Ahorro
             composable(Rutas.LISTA) {
-
-                val usuario by
-                perfilViewModel.usuario.collectAsState()
-
+                val usuario by perfilViewModel.usuario.collectAsState()
                 ListaMetasScreen(
-
                     userId = usuario?.id ?: 0,
-
                     onMetaClick = { metaId ->
-
-                        navController.navigate(
-                            Rutas.detalle(metaId)
-                        )
+                        navController.navigate(Rutas.detalle(metaId))
                     },
-
                     onCrearMetaClick = {
                         navController.navigate(Rutas.CREAR_META)
                     }
                 )
             }
 
+            // Pantalla para crear una nueva meta
             composable(Rutas.CREAR_META) {
                 val usuario by perfilViewModel.usuario.collectAsState()
-                
                 CrearMetaScreen(
                     userId = usuario?.id ?: 0,
                     onMetaCreada = {
@@ -236,54 +193,33 @@ fun AppNavigation() {
                 )
             }
 
+            // Pantalla de Detalle de Meta (con lista de miembros y aportes)
             composable(
-
                 route = Rutas.DETALLE,
-
                 arguments = listOf(
-                    navArgument("metaId") {
-                        type = NavType.IntType
-                    }
+                    navArgument("metaId") { type = NavType.IntType }
                 )
-
             ) { backStackEntry ->
-
-                val metaId =
-                    backStackEntry.arguments
-                        ?.getInt("metaId") ?: 0
-                
+                val metaId = backStackEntry.arguments?.getInt("metaId") ?: 0
                 val usuario by perfilViewModel.usuario.collectAsState()
 
                 DetalleMetaScreen(
-
                     metaId = metaId,
                     userId = usuario?.id ?: 0,
-
                     onRegistrarPago = { id ->
-
-                        navController.navigate(
-                            Rutas.pago(id)
-                        )
+                        navController.navigate(Rutas.pago(id))
                     }
                 )
             }
 
+            // Pantalla para registrar un nuevo pago/aporte
             composable(
-
                 route = Rutas.PAGO,
-
                 arguments = listOf(
-                    navArgument("metaId") {
-                        type = NavType.IntType
-                    }
+                    navArgument("metaId") { type = NavType.IntType }
                 )
-
             ) { backStackEntry ->
-
-                val metaId =
-                    backStackEntry.arguments
-                        ?.getInt("metaId") ?: 0
-
+                val metaId = backStackEntry.arguments?.getInt("metaId") ?: 0
                 val usuario by perfilViewModel.usuario.collectAsState()
 
                 PagoScreen(
