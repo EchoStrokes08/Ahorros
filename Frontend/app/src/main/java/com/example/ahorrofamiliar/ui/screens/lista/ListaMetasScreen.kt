@@ -26,10 +26,15 @@ import com.example.ahorrofamiliar.viewmodel.ViewModelFactory
  */
 @Composable
 fun ListaMetasScreen(
+    userId: Int,
     onMetaClick: (Int) -> Unit
 ) {
     val viewModel: ListaMetasViewModel = viewModel(factory = ViewModelFactory())
     val uiState by viewModel.uiState.collectAsState()
+
+    LaunchedEffect(userId) {
+        viewModel.cargarMetas(userId)
+    }
 
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
 
@@ -55,7 +60,7 @@ fun ListaMetasScreen(
                 ) {
                     Text("Error: ${estado.mensaje}")
                     Spacer(Modifier.height(8.dp))
-                    Button(onClick = { viewModel.cargarMetas() }) {
+                    Button(onClick = { viewModel.cargarMetas(userId) }) {
                         Text("Reintentar")
                     }
                 }

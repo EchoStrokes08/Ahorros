@@ -22,15 +22,11 @@ class ListaMetasViewModel(
     private val _uiState = MutableStateFlow<UiState<List<Meta>>>(UiState.Loading)
     val uiState: StateFlow<UiState<List<Meta>>> = _uiState.asStateFlow()
 
-    init {
-        cargarMetas()
-    }
-
-    fun cargarMetas() {
+    fun cargarMetas(userId: Int) {
         viewModelScope.launch {
             _uiState.value = UiState.Loading
             try {
-                val metas = repository.obtenerMetas()
+                val metas = repository.obtenerMetas(userId)
                 _uiState.value = UiState.Success(metas)
             } catch (e: Exception) {
                 _uiState.value = UiState.Error(e.message ?: "Error desconocido")

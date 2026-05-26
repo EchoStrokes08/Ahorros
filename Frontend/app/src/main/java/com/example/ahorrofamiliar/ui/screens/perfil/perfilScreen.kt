@@ -10,11 +10,9 @@ import com.example.ahorrofamiliar.ui.viewmodel.PerfilViewModel
 
 @Composable
 fun PerfilScreen(
-
     viewModel: PerfilViewModel,
-
-    dispositivoId: String
-
+    dispositivoId: String,
+    onNavigateToLista: () -> Unit
 ) {
 
     val usuario by viewModel.usuario.collectAsState()
@@ -39,9 +37,13 @@ fun PerfilScreen(
     // SI YA EXISTE
     // =====================================
 
-    usuario?.let {
+    LaunchedEffect(usuario) {
 
-        nombre = it.nombre
+        usuario?.let {
+
+            nombre = it.nombre
+
+        }
 
     }
 

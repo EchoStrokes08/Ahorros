@@ -1,6 +1,8 @@
 package com.example.ahorrofamiliar.ui.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -57,13 +59,22 @@ fun AppNavigation() {
 
             PerfilScreen(
                 viewModel = perfilViewModel,
-                dispositivoId = deviceId
+                dispositivoId = deviceId,
+                onNavigateToLista = {
+                    navController.navigate(Rutas.LISTA){
+                        popUpTo(Rutas.PERFIL){
+                            inclusive = true
+                        }
+                    }
+                }
             )
 
         }
 
         composable(Rutas.LISTA) {
+            val usuario by perfilViewModel.usuario.collectAsState()
             ListaMetasScreen(
+                userId = usuario?.id ?: 0,
                 onMetaClick = { metaId ->
                     navController.navigate(Rutas.detalle(metaId))
                 }

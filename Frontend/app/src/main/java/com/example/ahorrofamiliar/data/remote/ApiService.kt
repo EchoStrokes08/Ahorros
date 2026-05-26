@@ -17,10 +17,10 @@ import retrofit2.http.Query
 interface ApiService {
 
 
-    @GET("usuarios/dispositivo/{dispositivoId}")
+    @GET("usuarios/dispositivo/{idDispositivo}")
     suspend fun obtenerUsuarioPorDispositivo(
-        @Path("dispositivoId")
-        dispositivoId: String
+        @Path("idDispositivo")
+        idDispositivo: String
     ): Usuario
 
     @POST("usuarios")

@@ -1,4 +1,18 @@
 import express from 'express'
+import fs from 'fs'
+
+/*
+=====================================
+IMPORTAR DATOS
+=====================================
+
+Se importan los arreglos que funcionan
+como una base de datos temporal.
+
+- usuarios
+- metas
+- pagos
+*/
 
 import {
   usuarios,
@@ -6,32 +20,117 @@ import {
   pagos
 } from './data.js'
 
+/*
+=====================================
+CONFIGURACIÓN INICIAL
+=====================================
+*/
+
 const app = express()
 const port = 3000
 
 /*
+Permite recibir JSON desde Retrofit
+o cualquier cliente HTTP.
+*/
+
+app.use(express.json())
+
+
+/*
 =====================================
-usuarios
+GUARDAR ARCHIVO data.js
 =====================================
 */
 
+function guardarData() {
+
+  const contenido = `
+
+export const usuarios = ${JSON.stringify(
+    usuarios,
+    null,
+    2
+  )}
+
+export const metas = ${JSON.stringify(
+    metas,
+    null,
+    2
+  )}
+
+export const pagos = ${JSON.stringify(
+    pagos,
+    null,
+    2
+  )}
+
+`
+
+  fs.writeFileSync(
+    './data.js',
+    contenido
+  )
+
+}
+
+/*
+#####################################################
+USUARIOS
+#####################################################
+*/
+
+/*
+=====================================
+OBTENER TODOS LOS USUARIOS
+=====================================
+
+GET /usuarios
+*/
+
 app.get('/usuarios', (req, res) => {
+
   res.send(usuarios)
+
 })
 
+/*
+=====================================
+BUSCAR USUARIO POR ID DEL DISPOSITIVO
+=====================================
+
+GET /usuarios/dispositivo/:idDispositivo
+
+Ejemplo:
+GET /usuarios/dispositivo/12345
+
+Se usa para identificar al usuario
+desde el celular sin login.
+*/
+
 app.get(
-  '/usuarios/dispositivo/:dispositivoId',
+  '/usuarios/dispositivo/:idDispositivo',
 
   (req, res) => {
 
     const dispositivoId =
-      req.params.dispositivoId
+      req.params.idDispositivo
+
+    /*
+    Buscar usuario
+    */
 
     const usuario = usuarios.find(
+
       u =>
-        u.dispositivoId ===
+        u.idDispositivo ===
         dispositivoId
+
     )
+
+    /*
+    Validar existencia
+    */
 
     if (!usuario) {
 
@@ -41,310 +140,743 @@ app.get(
 
     }
 
+    /*
+    Respuesta
+    */
+
     res.send(usuario)
 
   }
 )
 
+/*
+=====================================
+CREAR USUARIO
+=====================================
+
+POST /usuarios
+
+Body:
+{
+  "nombre": "Jonathan",
+  "idDispositivo": "12345"
+}
+*/
+
 app.post('/usuarios', (req, res) => {
 
-  const NuevoUsuario = {
+  /*
+  Crear objeto usuario
+  */
+
+  const nuevoUsuario = {
+
     id: usuarios.length + 1,
-    nombre: req.body.name,
-    idDispositivo: req.body.IdDispositivo,
+
+    nombre: req.body.nombre,
+
+    idDispositivo:
+      req.body.idDispositivo,
+
     amigos: []
+
   }
 
-  usuarios.push(NuevoUsuario)
+  /*
+  Guardar usuario
+  */
 
-  res.status(201).send(NuevoUsuario)
+  usuarios.push(nuevoUsuario)
+
+  /*
+  Respuesta
+  */
+
+  guardarData()
+
+  res.status(201).send(
+    nuevoUsuario
+  )
+
 })
+
+/*
+=====================================
+EDITAR USUARIO
+=====================================
+
+PUT /usuarios/:id
+
+Body:
+{
+  "nombre": "Nuevo nombre"
+}
+*/
 
 app.put('/usuarios/:id', (req, res) => {
 
-  const id = parseInt(req.params.id)
+  /*
+  Obtener id
+  */
 
-  const usuario = usuarios.find(u => u.id === id)
+  const id =
+    parseInt(req.params.id)
+
+  /*
+  Buscar usuario
+  */
+
+  const usuario = usuarios.find(
+    u => u.id === id
+  )
+
+  /*
+  Validar existencia
+  */
 
   if (!usuario) {
+
     return res.status(404).send({
       error: 'Usuario no encontrado'
     })
+
   }
 
-  usuario.nombre = req.body.name
+  /*
+  Actualizar nombre
+  */
 
+  usuario.nombre =
+    req.body.nombre
+
+  /*
+  Respuesta
+  */
+  guardarData()
   res.send(usuario)
+
 })
 
 /*
-=====================================
-agregar amigo
-=====================================
+#####################################################
+AMIGOS
+#####################################################
 */
 
-app.post('/usuarios/:id/amigos', (req, res) => {
+/*
+=====================================
+AGREGAR AMIGO
+=====================================
 
-  const id = parseInt(req.params.id)
+POST /usuarios/:id/amigos
 
-  const IdAmigo = req.body.friendId
+Body:
+{
+  "friendId": 2
+}
 
-  const usuario = usuarios.find(u => u.id === id)
+La amistad se agrega en ambos lados.
+*/
 
-  const amigo = usuarios.find(u => u.id === IdAmigo)
+app.post(
+  '/usuarios/:id/amigos',
 
-  if (!usuario || !amigo) {
-    return res.status(404).send({
-      error: 'Usuario no encontrado'
+  (req, res) => {
+
+    /*
+    Usuario principal
+    */
+
+    const id =
+      parseInt(req.params.id)
+
+    /*
+    Usuario amigo
+    */
+
+    const idAmigo =
+      req.body.friendId
+
+    /*
+    Buscar usuarios
+    */
+
+    const usuario = usuarios.find(
+      u => u.id === id
+    )
+
+    const amigo = usuarios.find(
+      u => u.id === idAmigo
+    )
+
+    /*
+    Validar existencia
+    */
+
+    if (!usuario || !amigo) {
+
+      return res.status(404).send({
+        error: 'Usuario no encontrado'
+      })
+
+    }
+
+    /*
+    Agregar amigo al usuario
+    */
+
+    if (
+      !usuario.amigos.includes(idAmigo)
+    ) {
+
+      usuario.amigos.push(idAmigo)
+
+    }
+
+    /*
+    Agregar usuario al amigo
+    */
+
+    if (
+      !amigo.amigos.includes(id)
+    ) {
+
+      amigo.amigos.push(id)
+
+    }
+
+    /*
+    Respuesta
+    */
+
+    res.send({
+      mensaje: 'Amigo agregado'
     })
-  }
-  if (!usuario.amigos.includes(IdAmigo)) {
-    usuario.amigos.push(IdAmigo)
-  }
 
-  if (!amigo.amigos.includes(id)) {
-    amigo.amigos.push(id)
   }
-
-  res.send({
-    message: 'Amigo agregado'
-  })
-})
+)
 
 /*
-=====================================
-metas
-=====================================
+#####################################################
+METAS
+#####################################################
 */
 
 /*
+=====================================
+OBTENER METAS VISIBLES
+=====================================
+
+GET /metas?userId=1
+
 Solo devuelve metas donde:
 - el usuario es dueño
-- o es miembro
+- o pertenece como miembro
 */
 
-app.get('/usuarios/:id/metas', (req, res) => {
+app.get('/metas', (req, res) => {
 
-  const IdUsuario = parseInt(req.params.id)
+  /*
+  Obtener usuario
+  */
 
-  const metasVisiles = metas.filter(meta => {
+  const userId =
+    parseInt(req.query.userId)
 
-    return (
-      meta.IdPrincipal === IdUsuario ||
-      meta.miembros.includes(IdUsuario)
-    )
-  })
+  /*
+  Filtrar metas visibles
+  */
 
-  res.send(metasVisiles)
+  const metasVisibles = metas.filter(
+
+    meta => {
+
+      return (
+
+        meta.idPrincipal === userId ||
+
+        meta.miembros.includes(userId)
+
+      )
+
+    }
+
+  )
+
+  /*
+  Respuesta
+  */
+
+  res.send(metasVisibles)
+
 })
 
 /*
-Crear meta
+=====================================
+CREAR META
+=====================================
+
+POST /metas
+
+Body:
+{
+  "titulo": "Moto",
+  "montoObjetivo": 12000000,
+  "imagen": "...",
+  "idPrincipal": 1
+}
 */
 
 app.post('/metas', (req, res) => {
 
+  /*
+  Crear meta
+  */
+
   const nuevaMeta = {
+
     id: metas.length + 1,
-    titulo: req.body.title,
-    montoObjetivo: req.body.targetAmount,
-    imagen: req.body.image,
-    IdPrincipal: req.body.ownerId,
-    miembros: [req.body.ownerId]
+
+    titulo: req.body.titulo,
+
+    montoObjetivo:
+      req.body.montoObjetivo,
+
+    imagen: req.body.imagen,
+
+    idPrincipal:
+      req.body.idPrincipal,
+
+    /*
+    El dueño entra automáticamente
+    como miembro
+    */
+
+    miembros: [
+      req.body.idPrincipal
+    ]
+
   }
+
+  /*
+  Guardar meta
+  */
 
   metas.push(nuevaMeta)
 
-  res.status(201).send(nuevaMeta)
+  /*
+  Respuesta
+  */
+
+  guardarData()
+
+  res.status(201).send(
+    nuevaMeta
+  )
+
 })
 
 /*
-Detalle meta
+=====================================
+DETALLE DE META
+=====================================
+
+GET /metas/:id?idPrincipal=1
+
+Devuelve:
+- datos de la meta
+- pagos
+- total ahorrado
+- porcentaje
 */
 
-app.get('/metas/:metaId', (req, res) => {
+app.get('/metas/:id', (req, res) => {
 
-  const metaId = parseInt(req.params.metaId)
+  /*
+  Obtener datos
+  */
 
-  const IdUsuario = parseInt(req.query.userId)
+  const metaId =
+    parseInt(req.params.id)
 
-  const meta = metas.find(m => m.id === metaId)
+  const idUsuario =
+    parseInt(req.query.idPrincipal)
+
+  /*
+  Buscar meta
+  */
+
+  const meta = metas.find(
+    m => m.id === metaId
+  )
+
+  /*
+  Validar existencia
+  */
 
   if (!meta) {
+
     return res.status(404).send({
       error: 'Meta no encontrada'
     })
+
   }
 
   /*
   Validar acceso
   */
 
-  const hasAccess =
-    meta.IdPrincipal === IdUsuario ||
-    meta.miembros.includes(IdUsuario)
+  const tieneAcceso =
 
-  if (!hasAccess) {
+    meta.idPrincipal ===
+      idUsuario ||
+
+    meta.miembros.includes(
+      idUsuario
+    )
+
+  if (!tieneAcceso) {
+
     return res.status(403).send({
-      error: 'No tienes acceso a esta meta'
+      error:
+        'No tienes acceso a esta meta'
     })
+
   }
+
+  /*
+  Obtener pagos
+  */
 
   const pagosDeLaMeta = pagos.filter(
+
     p => p.metaId === metaId
+
   )
 
-  const totalSalvado = pagosDeLaMeta.reduce(
-    (sum, pago) => sum + pago.amount,
-    0
-  )
+  /*
+  Calcular total ahorrado
+  */
+
+  const totalSalvado =
+    pagosDeLaMeta.reduce(
+
+      (sum, pago) =>
+
+        sum + pago.montoAportado,
+
+      0
+
+    )
+
+  /*
+  Calcular porcentaje
+  */
 
   const porcentaje =
-    (totalSalvado / meta.montoObjetivo) * 100
+
+    (totalSalvado /
+      meta.montoObjetivo) * 100
+
+  /*
+  Respuesta
+  */
 
   res.send({
+
     ...meta,
+
     pagosDeLaMeta,
+
     totalSalvado,
+
     porcentaje
+
   })
+
 })
 
 /*
-Agregar miembro a meta
+=====================================
+AGREGAR MIEMBRO A META
+=====================================
+
+POST /metas/:idMeta/miembros
+
+Body:
+{
+  "idUsuario": 2,
+  "idSolicitante": 1
+}
+
+Solo el dueño puede agregar miembros.
+Solo puede agregar amigos.
 */
 
-app.post('/metas/:idMeta/miembros', (req, res) => {
+app.post(
+  '/metas/:idMeta/miembros',
 
-  const idMeta = parseInt(req.params.idMeta)
+  (req, res) => {
 
-  const idUsuario = req.body.idUsuario
+    /*
+    Obtener datos
+    */
 
-  const idSolicitante = req.body.idSolicitante
+    const idMeta =
+      parseInt(req.params.idMeta)
 
-  const meta = metas.find(
-    m => m.id === idMeta
-  )
+    const idUsuario =
+      req.body.idUsuario
 
-  // ===============================
-  // validar meta
-  // ===============================
+    const idSolicitante =
+      req.body.idSolicitante
 
-  if (!meta) {
+    /*
+    Buscar meta
+    */
 
-    return res.status(404).send({
-      error: 'Meta no encontrada'
+    const meta = metas.find(
+      m => m.id === idMeta
+    )
+
+    /*
+    Validar existencia
+    */
+
+    if (!meta) {
+
+      return res.status(404).send({
+        error: 'Meta no encontrada'
+      })
+
+    }
+
+    /*
+    Solo el dueño puede agregar
+    */
+
+    if (
+      meta.idPrincipal !==
+      idSolicitante
+    ) {
+
+      return res.status(403).send({
+        error:
+          'Solo el dueño puede agregar miembros'
+      })
+
+    }
+
+    /*
+    Buscar dueño
+    */
+
+    const dueño = usuarios.find(
+
+      u =>
+        u.id === meta.idPrincipal
+
+    )
+
+    /*
+    Validar amistad
+    */
+
+    if (
+      !dueño.amigos.includes(
+        idUsuario
+      )
+    ) {
+
+      return res.status(400).send({
+        error:
+          'Solo puedes agregar amigos'
+      })
+
+    }
+
+    /*
+    Agregar miembro
+    */
+
+    if (
+      !meta.miembros.includes(
+        idUsuario
+      )
+    ) {
+
+      meta.miembros.push(
+        idUsuario
+      )
+      guardarData()
+
+    }
+
+    /*
+    Respuesta
+    */
+
+    res.send({
+      mensaje: 'Miembro agregado'
     })
 
   }
+)
 
-  // ===============================
-  // solo el dueño puede agregar miembros
-  // ===============================
-
-  if (meta.idPrincipal !== idSolicitante) {
-
-    return res.status(403).send({
-      error: 'Solo el dueño puede agregar miembros'
-    })
-
-  }
-
-  // ===============================
-  // validar amistad
-  // ===============================
-
-  const dueño = usuarios.find(
-    u => u.id === meta.idPrincipal
-  )
-
-  if (!dueño.amigos.includes(idUsuario)) {
-
-    return res.status(400).send({
-      error: 'Solo puedes agregar amigos'
-    })
-
-  }
-
-  // ===============================
-  // agregar miembro
-  // ===============================
-
-  if (!meta.miembros.includes(idUsuario)) {
-
-    meta.miembros.push(idUsuario)
-
-  }
-
-  // ===============================
-  // respuesta
-  // ===============================
-
-  res.send({
-    mensaje: 'Miembro agregado'
-  })
-
-})
+/*
+#####################################################
+PAGOS
+#####################################################
+*/
 
 /*
 =====================================
-pagos
+REGISTRAR PAGO
 =====================================
+
+POST /pagos
+
+Body:
+{
+  "metaId": 1,
+  "userId": 2,
+  "montoAportado": 50000
+}
 */
 
 app.post('/pagos', (req, res) => {
 
+  /*
+  Buscar meta
+  */
+
   const meta = metas.find(
+
     m => m.id === req.body.metaId
+
   )
 
+  /*
+  Validar existencia
+  */
+
   if (!meta) {
+
     return res.status(404).send({
       error: 'Meta no encontrada'
     })
+
   }
 
   /*
-  Solo miembros pueden pagar
+  Validar membresía
   */
 
   const esMiembro =
-    meta.miembros.includes(req.body.userId)
+
+    meta.miembros.includes(
+      req.body.userId
+    )
 
   if (!esMiembro) {
+
     return res.status(403).send({
-      error: 'No perteneces a esta meta'
+      error:
+        'No perteneces a esta meta'
     })
+
   }
 
+  /*
+  Crear pago
+  */
+
   const nuevoPago = {
+
     id: pagos.length + 1,
-    metaId: req.body.metaId,
-    userId: req.body.userId,
-    amount: req.body.amount,
-    date: new Date().toISOString()
+
+    metaId:
+      req.body.metaId,
+
+    userId:
+      req.body.userId,
+
+    montoAportado:
+      req.body.montoAportado,
+
+    fecha:
+      new Date().toISOString()
+
   }
+
+  /*
+  Guardar pago
+  */
 
   pagos.push(nuevoPago)
 
-  res.status(201).send(nuevoPago)
+  /*
+  Respuesta
+  */
+
+  guardarData()
+
+  res.status(201).send(
+    nuevoPago
+  )
+
 })
 
 /*
-Consultar pagos
+=====================================
+CONSULTAR PAGOS DE UNA META
+=====================================
+
+GET /metas/:metaId/pagos
 */
 
-app.get('/metas/:metaId/pagos', (req, res) => {
+app.get(
+  '/metas/:metaId/pagos',
 
-  const metaId = parseInt(req.params.metaId)
+  (req, res) => {
 
-  const pagosdeLaMeta = pagos.filter(
-    p => p.metaId === metaId
-  )
+    /*
+    Obtener id meta
+    */
 
-  res.send(pagosdeLaMeta)
-})
+    const metaId =
+      parseInt(req.params.metaId)
+
+    /*
+    Filtrar pagos
+    */
+
+    const pagosDeLaMeta =
+      pagos.filter(
+
+        p => p.metaId === metaId
+
+      )
+
+    /*
+    Respuesta
+    */
+
+    res.send(pagosDeLaMeta)
+
+  }
+)
+
+/*
+#####################################################
+INICIAR SERVIDOR
+#####################################################
+*/
 
 app.listen(port, () => {
-  console.log(`Running on port ${port}`)
+
+  console.log(
+    `Servidor ejecutándose en puerto ${port}`
+  )
+
 })

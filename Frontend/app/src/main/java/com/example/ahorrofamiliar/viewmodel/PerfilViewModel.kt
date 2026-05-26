@@ -23,7 +23,7 @@ class PerfilViewModel(
     // =====================================
 
     fun cargarUsuario(
-        dispositivoId: String
+        idDispositivo: String
     ) {
 
         viewModelScope.launch {
@@ -33,7 +33,7 @@ class PerfilViewModel(
                 val usuario =
                     repository
                         .obtenerUsuarioPorDispositivo(
-                            dispositivoId
+                            idDispositivo
                         )
 
                 _usuario.value = usuario
@@ -54,24 +54,26 @@ class PerfilViewModel(
 
     fun crearUsuario(
         nombre: String,
-        idDsipositivo: String
+        idDispositivo: String,
+        onSuccess: () -> Unit = {}
     ) {
 
         viewModelScope.launch {
 
-            val nuevoUsuario = Usuario(
-                id = 0,
-                nombre = nombre,
-                idDispositivo = idDsipositivo,
-                amigos = emptyList()
-            )
-
-            val usuarioCreado =
-                repository.crearUsuario(
-                    nuevoUsuario
+            try {
+                val nuevoUsuario = Usuario(
+                    id = 0,
+                    nombre = nombre,
+                    idDispositivo = idDispositivo,
+                    amigos = emptyList()
                 )
-
-            _usuario.value = usuarioCreado
+                val usuarioCreado = repository.crearUsuario(nuevoUsuario)
+                _usuario.value = usuarioCreado
+                onSuccess() // Llamar al éxito
+            } catch (e: Exception) {
+                e.printStackTrace()
+                // Aquí podrías manejar un estado de error para mostrar en la UI
+            }
 
         }
 
@@ -82,26 +84,22 @@ class PerfilViewModel(
     // =====================================
 
     fun editarUsuario(
-        nombre: String
+        nombre: String,
+        onSuccess: () -> Unit = {}
     ) {
 
         val usuarioActual =
             _usuario.value ?: return
 
         viewModelScope.launch {
-
-            val usuarioEditado =
-                usuarioActual.copy(
-                    nombre = nombre
-                )
-
-            val respuesta =
-                repository.editarUsuario(
-                    usuarioActual.id,
-                    usuarioEditado
-                )
-
-            _usuario.value = respuesta
+            try {
+                val usuarioEditado = usuarioActual.copy(nombre = nombre)
+                val respuesta = repository.editarUsuario(usuarioActual.id, usuarioEditado)
+                _usuario.value = respuesta
+                onSuccess() // Llamar al éxito
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
 
         }
 

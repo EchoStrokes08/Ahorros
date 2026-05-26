@@ -8,11 +8,11 @@ class UsuarioRepository(
 ) {
 
     suspend fun obtenerUsuarioPorDispositivo(
-        dispositivoId: String
+        idDispositivo: String
     ): Usuario {
 
         return api.obtenerUsuarioPorDispositivo(
-            dispositivoId
+            idDispositivo
         )
 
     }
