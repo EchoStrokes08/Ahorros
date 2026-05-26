@@ -16,7 +16,19 @@ class MetaRepository(private val api: ApiService) {
 
     suspend fun obtenerMetas(userId: Int): List<Meta> = api.obtenerMetas(userId)
 
-    suspend fun obtenerMeta(id: Int): Meta = api.obtenerMeta(id)
+    suspend fun crearMeta(meta: Meta): Meta = api.crearMeta(meta)
+
+    suspend fun obtenerMeta(id: Int, userId: Int): Meta = api.obtenerMeta(id, userId)
+
+    suspend fun agregarMiembro(metaId: Int, idUsuario: Int, idSolicitante: Int) {
+        api.agregarMiembro(
+            metaId,
+            mapOf(
+                "idUsuario" to idUsuario,
+                "idSolicitante" to idSolicitante
+            )
+        )
+    }
 
     suspend fun obtenerPagos(metaId: Int): List<Pago> = api.obtenerPagos(metaId)
 

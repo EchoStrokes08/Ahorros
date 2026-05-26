@@ -345,6 +345,8 @@ app.post(
 
     }
 
+    guardarData()
+
     /*
     Respuesta
     */
@@ -739,7 +741,7 @@ POST /pagos
 Body:
 {
   "metaId": 1,
-  "userId": 2,
+  "idMiembro": 2,
   "montoAportado": 50000
 }
 */
@@ -775,7 +777,7 @@ app.post('/pagos', (req, res) => {
   const esMiembro =
 
     meta.miembros.includes(
-      req.body.userId
+      req.body.idMiembro
     )
 
   if (!esMiembro) {
@@ -798,14 +800,14 @@ app.post('/pagos', (req, res) => {
     metaId:
       req.body.metaId,
 
-    userId:
-      req.body.userId,
+    idMiembro:
+      req.body.idMiembro,
 
     montoAportado:
       req.body.montoAportado,
 
     fecha:
-      new Date().toISOString()
+      new Date().toLocaleDateString()
 
   }
 

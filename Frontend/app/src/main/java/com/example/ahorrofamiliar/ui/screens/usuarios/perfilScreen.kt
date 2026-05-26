@@ -1,17 +1,16 @@
-package com.example.ahorrofamiliar.ui.screens.perfil
+package com.example.ahorrofamiliar.ui.screens.usuarios
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.ahorrofamiliar.ui.viewmodel.PerfilViewModel
 
 @Composable
 fun PerfilScreen(
     viewModel: PerfilViewModel,
-    dispositivoId: String,
+    idDispositivo: String,
     onNavigateToLista: () -> Unit
 ) {
 
@@ -21,15 +20,15 @@ fun PerfilScreen(
         mutableStateOf("")
     }
 
+
+
     // =====================================
     // CARGAR USUARIO
     // =====================================
 
     LaunchedEffect(Unit) {
 
-        viewModel.cargarUsuario(
-            dispositivoId
-        )
+        viewModel.cargarUsuario(idDispositivo)
 
     }
 
@@ -92,7 +91,7 @@ fun PerfilScreen(
 
                     viewModel.crearUsuario(
                         nombre,
-                        dispositivoId
+                        idDispositivo
                     )
 
                 } else {
@@ -110,6 +109,5 @@ fun PerfilScreen(
             Text("Guardar")
 
         }
-
     }
 }

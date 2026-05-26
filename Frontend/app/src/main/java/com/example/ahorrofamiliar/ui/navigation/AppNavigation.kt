@@ -1,35 +1,53 @@
 package com.example.ahorrofamiliar.ui.navigation
 
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Add
+
+import androidx.compose.material3.Icon
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import androidx.lifecycle.viewmodel.compose.viewModel
+
+
+import com.example.ahorrofamiliar.viewmodel.ViewModelFactory
 import com.example.ahorrofamiliar.ui.screens.detalle.DetalleMetaScreen
 import com.example.ahorrofamiliar.ui.screens.lista.ListaMetasScreen
+import com.example.ahorrofamiliar.ui.screens.lista.CrearMetaScreen
 import com.example.ahorrofamiliar.ui.screens.pago.PagoScreen
-import com.example.ahorrofamiliar.ui.screens.perfil.PerfilScreen
-
-
-import androidx.compose.ui.platform.LocalContext
-import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.ahorrofamiliar.data.remote.RetrofitClient
-import com.example.ahorrofamiliar.data.repository.UsuarioRepository
+import com.example.ahorrofamiliar.ui.screens.usuarios.PerfilScreen
 import com.example.ahorrofamiliar.ui.viewmodel.PerfilViewModel
+import com.example.ahorrofamiliar.ui.viewmodel.AmigosViewModel
+import com.example.ahorrofamiliar.ui.screens.amigos.AmigosScreen
 import com.example.ahorrofamiliar.utils.DeviceUtils
 
-
 object Rutas {
+
     const val LISTA = "lista"
     const val DETALLE = "detalle/{metaId}"
     const val PAGO = "pago/{metaId}"
-
     const val PERFIL = "perfil"
+    const val AMIGOS = "amigos"
+    const val CREAR_META = "crear_meta"
 
     fun detalle(metaId: Int) = "detalle/$metaId"
+
     fun pago(metaId: Int) = "pago/$metaId"
 }
 
@@ -38,69 +56,244 @@ fun AppNavigation() {
 
     val context = LocalContext.current
 
-    val deviceId =
-        DeviceUtils.obtenerDispositivoId(
-            context
-        )
-    val usuarioRepository =
-        UsuarioRepository(
-            RetrofitClient.apiService
-        )
-    val perfilViewModel =
-        PerfilViewModel(
-            usuarioRepository
-        )
+    val deviceId = DeviceUtils.obtenerDispositivoId(context)
 
+    val perfilViewModel: PerfilViewModel = viewModel(
+        factory = ViewModelFactory()
+    )
+    val amigosViewModel: AmigosViewModel = viewModel(
+        factory = ViewModelFactory()
+    )
     val navController = rememberNavController()
 
-    NavHost(navController = navController, startDestination = Rutas.PERFIL) {
+    val backStackEntry by navController.currentBackStackEntryAsState()
 
-        composable(Rutas.PERFIL) {
+    val currentRoute = backStackEntry?.destination?.route
 
-            PerfilScreen(
-                viewModel = perfilViewModel,
-                dispositivoId = deviceId,
-                onNavigateToLista = {
-                    navController.navigate(Rutas.LISTA){
-                        popUpTo(Rutas.PERFIL){
-                            inclusive = true
+    LaunchedEffect(Unit) {
+        perfilViewModel.cargarUsuario(deviceId)
+    }
+
+    Scaffold(
+
+        bottomBar = {
+
+            NavigationBar {
+
+                NavigationBarItem(
+
+                    selected = currentRoute == Rutas.LISTA,
+
+                    onClick = {
+
+                        navController.navigate(Rutas.LISTA) {
+
+                            popUpTo(navController.graph.startDestinationId)
+
+                            launchSingleTop = true
                         }
+                    },
+
+                    icon = {
+                        Icon(
+                            Icons.Default.Home,
+                            contentDescription = "Metas"
+                        )
+                    },
+
+                    label = {
+                        Text("Metas")
                     }
+                )
+                NavigationBarItem(
+
+                    selected = currentRoute == Rutas.AMIGOS,
+
+                    onClick = {
+
+                        navController.navigate(Rutas.AMIGOS) {
+
+                            popUpTo(navController.graph.startDestinationId)
+
+                            launchSingleTop = true
+                        }
+                    },
+
+                    icon = {
+                        Icon(
+                            Icons.Default.Add,
+                            contentDescription = "Metas"
+                        )
+                    },
+
+                    label = {
+                        Text("Amigos")
+                    }
+                )
+                NavigationBarItem(
+
+                    selected = currentRoute == Rutas.PERFIL,
+
+                    onClick = {
+
+                        navController.navigate(Rutas.PERFIL) {
+
+                            popUpTo(navController.graph.startDestinationId)
+
+                            launchSingleTop = true
+                        }
+                    },
+
+                    icon = {
+                        Icon(
+                            Icons.Default.Person,
+                            contentDescription = "Perfil"
+                        )
+                    },
+
+                    label = {
+                        Text("Perfil")
+                    }
+                )
+            }
+        }
+
+    ) { paddingValues ->
+
+        NavHost(
+            navController = navController,
+            startDestination = Rutas.PERFIL,
+            modifier = Modifier.padding(paddingValues)
+        ) {
+
+            composable(Rutas.PERFIL) {
+
+                PerfilScreen(
+
+                    viewModel = perfilViewModel,
+
+                    idDispositivo = deviceId,
+
+                    onNavigateToLista = {
+
+                        navController.navigate(Rutas.LISTA)
+                    }
+                )
+            }
+
+            composable(Rutas.AMIGOS) {
+
+                val usuario by
+                perfilViewModel.usuario.collectAsState()
+
+                usuario?.let {
+
+                    AmigosScreen(
+
+                        viewModel = amigosViewModel,
+
+                        usuarioActual = it,
+
+                        onAmigoAdded = {
+                            // Refrescar el perfil para obtener la lista de amigos actualizada
+                            perfilViewModel.cargarUsuario(deviceId)
+                        }
+
+                    )
                 }
-            )
+            }
 
-        }
+            composable(Rutas.LISTA) {
 
-        composable(Rutas.LISTA) {
-            val usuario by perfilViewModel.usuario.collectAsState()
-            ListaMetasScreen(
-                userId = usuario?.id ?: 0,
-                onMetaClick = { metaId ->
-                    navController.navigate(Rutas.detalle(metaId))
-                }
-            )
-        }
+                val usuario by
+                perfilViewModel.usuario.collectAsState()
 
-        composable(
-            route = Rutas.DETALLE,
-            arguments = listOf(navArgument("metaId") { type = NavType.IntType })
-        ) { backStackEntry ->
-            val metaId = backStackEntry.arguments?.getInt("metaId") ?: 0
-            DetalleMetaScreen(
-                metaId = metaId,
-                onRegistrarPago = { id -> navController.navigate(Rutas.pago(id)) }
-            )
-        }
+                ListaMetasScreen(
 
-        composable(
-            route = Rutas.PAGO,
-            arguments = listOf(navArgument("metaId") { type = NavType.IntType })
-        ) { backStackEntry ->
-            val metaId = backStackEntry.arguments?.getInt("metaId") ?: 0
-            PagoScreen(
-                metaId = metaId,
-                onPagoRegistrado = { navController.popBackStack() }
-            )
+                    userId = usuario?.id ?: 0,
+
+                    onMetaClick = { metaId ->
+
+                        navController.navigate(
+                            Rutas.detalle(metaId)
+                        )
+                    },
+
+                    onCrearMetaClick = {
+                        navController.navigate(Rutas.CREAR_META)
+                    }
+                )
+            }
+
+            composable(Rutas.CREAR_META) {
+                val usuario by perfilViewModel.usuario.collectAsState()
+                
+                CrearMetaScreen(
+                    userId = usuario?.id ?: 0,
+                    onMetaCreada = {
+                        navController.popBackStack()
+                    }
+                )
+            }
+
+            composable(
+
+                route = Rutas.DETALLE,
+
+                arguments = listOf(
+                    navArgument("metaId") {
+                        type = NavType.IntType
+                    }
+                )
+
+            ) { backStackEntry ->
+
+                val metaId =
+                    backStackEntry.arguments
+                        ?.getInt("metaId") ?: 0
+                
+                val usuario by perfilViewModel.usuario.collectAsState()
+
+                DetalleMetaScreen(
+
+                    metaId = metaId,
+                    userId = usuario?.id ?: 0,
+
+                    onRegistrarPago = { id ->
+
+                        navController.navigate(
+                            Rutas.pago(id)
+                        )
+                    }
+                )
+            }
+
+            composable(
+
+                route = Rutas.PAGO,
+
+                arguments = listOf(
+                    navArgument("metaId") {
+                        type = NavType.IntType
+                    }
+                )
+
+            ) { backStackEntry ->
+
+                val metaId =
+                    backStackEntry.arguments
+                        ?.getInt("metaId") ?: 0
+
+                val usuario by perfilViewModel.usuario.collectAsState()
+
+                PagoScreen(
+                    metaId = metaId,
+                    userId = usuario?.id ?: 0,
+                    onPagoRegistrado = {
+                        navController.popBackStack()
+                    }
+                )
+            }
         }
     }
 }

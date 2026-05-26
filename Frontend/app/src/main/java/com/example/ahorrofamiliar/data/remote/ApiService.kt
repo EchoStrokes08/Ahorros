@@ -16,6 +16,8 @@ import retrofit2.http.Query
  */
 interface ApiService {
 
+    @GET("usuarios")
+    suspend fun obtenerUsuarios(): List<Usuario>
 
     @GET("usuarios/dispositivo/{idDispositivo}")
     suspend fun obtenerUsuarioPorDispositivo(
@@ -33,15 +35,38 @@ interface ApiService {
         @Path("id") id: Int,
         @Body usuario: Usuario
     ): Usuario
+
+    @POST("usuarios/{id}/amigos")
+    suspend fun agregarAmigo(
+        @Path("id") id: Int, //params
+        @Body body: Map<String, Int>
+    ): Usuario
+
     // GET /metas - lista todas las metas
     @GET("metas")
     suspend fun obtenerMetas(
         @Query("userId") userId: Int
     ): List<Meta>
 
+    // POST /metas - crear una meta
+    @POST("metas")
+    suspend fun crearMeta(
+        @Body meta: Meta
+    ): Meta
+
     // GET /metas/{id} - detalle de una meta
     @GET("metas/{id}")
-    suspend fun obtenerMeta(@Path("id") id: Int): Meta
+    suspend fun obtenerMeta(
+        @Path("id") id: Int,
+        @Query("idPrincipal") userId: Int
+    ): Meta
+
+    // POST /metas/{id}/miembros - agregar miembro
+    @POST("metas/{id}/miembros")
+    suspend fun agregarMiembro(
+        @Path("id") metaId: Int,
+        @Body body: Map<String, Int>
+    ): Map<String, String>
 
     // GET /metas/{id}/pagos - pagos de una meta
     @GET("metas/{id}/pagos")

@@ -36,4 +36,21 @@ class UsuarioRepository(
         )
 
     }
+    suspend fun obtenerUsuarios():
+            List<Usuario> {
+
+        return api.obtenerUsuarios()
+    }
+    suspend fun agregarAmigo(
+        idUsuario: Int,
+        idAmigo: Int
+    ) {
+
+        api.agregarAmigo(
+            idUsuario,
+            mapOf(
+                "friendId" to idAmigo
+            )
+        )
+    }
 }
