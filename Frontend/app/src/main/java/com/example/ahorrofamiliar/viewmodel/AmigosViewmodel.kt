@@ -71,7 +71,6 @@ class AmigosViewModel(
                     usuarioId,
                     amigoId
                 )
-
                 // Refrescar la lista local después de agregar
                 cargarUsuarios()
 
